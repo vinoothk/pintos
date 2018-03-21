@@ -49,7 +49,6 @@ struct kernel_thread_frame
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
-
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
@@ -92,7 +91,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-  /*vinooth - initialize sleep_thread */
+  /*vinooth - initialize sleep_threads */
   list_init (&sleep_list);
 
   /* Set up a thread structure for the running thread. */
@@ -135,6 +134,7 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -589,17 +589,23 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 Thread sleep puts the called thread in sleep_list and wakes up after x ticks
 */
 
-void thread_sleep(void)
+void thread_sleep(int64_t ticks)
 {
   struct thread *cur = thread_current ();
   enum intr_level old_level;
   
+
+  cur->sleep_ticks = ticks;
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&sleep_list, &cur->elem);
-  cur->status = THREAD_READY;
-  schedule ();
+  // if (cur != idle_thread) 
+  list_push_back (&sleep_list, &cur->sleep_elem);
+  thread_block();
+  // cur->status = THREAD_BLOCKED;
+  //thread_unblock();
+  // schedule ();
+
+
   intr_set_level (old_level);
 }
