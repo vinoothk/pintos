@@ -609,3 +609,24 @@ void thread_sleep(int64_t ticks)
 
   intr_set_level (old_level);
 }
+
+void thread_wakeup(int64_t ticks)
+{
+  struct list_elem *e;
+  // if (list_size(sleep_list) != 0)
+  // {
+    ASSERT (intr_get_level () == INTR_OFF);
+    for (e = list_begin (&sleep_list); e != list_end (&sleep_list); e = list_next (e))
+    {
+      struct thread *t = list_entry(e,struct thread, sleep_elem);
+      // wakeup_ticks = t;
+      if (t->sleep_ticks <= ticks)
+      {
+        t->sleep_ticks = 0;
+        list_remove(&t->sleep_elem);
+        thread_unblock(t);
+      }
+    }
+  // }
+
+}
