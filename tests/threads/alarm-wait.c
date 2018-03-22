@@ -145,6 +145,7 @@ sleeper (void *t_)
     {
       int64_t sleep_until = test->start + i * t->duration;
       timer_sleep (sleep_until - timer_ticks ());
+      // printf("alarm_wait()\t\t\n");
       lock_acquire (&test->output_lock);
       *test->output_pos++ = t->id;
       lock_release (&test->output_lock);

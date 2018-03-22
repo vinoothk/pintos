@@ -1,5 +1,6 @@
 #include "list.h"
 #include "../debug.h"
+#include "../../threads/thread.h"
 
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
@@ -462,7 +463,7 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
 
 bool timeticks_sort( struct list_elem *elem,
                               struct list_elem *e,
-                             void *aux)
+                             void *aux UNUSED)
 {
   struct thread *a1 = list_entry(e,struct thread, sleep_elem);
   struct thread *b1 = list_entry(elem,struct thread,sleep_elem);
