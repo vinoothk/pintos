@@ -137,7 +137,7 @@ thread_tick (void)
 
 
   /* Enforce preemption. */
-  if (++thread_ticks >= TIME_SLICE)
+  if (++thread_ticks >= TIME_SLICE)//
     intr_yield_on_return ();
 }
 
@@ -301,8 +301,9 @@ thread_exit (void)
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
 void
-thread_yield (void) 
+thread_yield () 
 {
+
   struct thread *cur = thread_current ();
   enum intr_level old_level;
   
@@ -600,7 +601,8 @@ void thread_sleep(int64_t ticks)
 
   old_level = intr_disable ();
   // if (cur != idle_thread) 
-  list_push_back (&sleep_list, &cur->sleep_elem);
+  // list_push_back (&sleep_list, &cur->sleep_elem);
+  list_insert_ordered (&sleep_list, &cur->sleep_elem, timeticks_sort , NULL );
   thread_block();
   // cur->status = THREAD_BLOCKED;
   //thread_unblock();
@@ -613,8 +615,8 @@ void thread_sleep(int64_t ticks)
 void thread_wakeup(int64_t ticks)
 {
   struct list_elem *e;
-  // if (list_size(sleep_list) != 0)
-  // {
+  if (list_size(&sleep_list) != 0)
+  {
     ASSERT (intr_get_level () == INTR_OFF);
     for (e = list_begin (&sleep_list); e != list_end (&sleep_list); e = list_next (e))
     {
@@ -622,11 +624,11 @@ void thread_wakeup(int64_t ticks)
       // wakeup_ticks = t;
       if (t->sleep_ticks <= ticks)
       {
-        t->sleep_ticks = 0;
+        t->sleep_ticks = -1;
         list_remove(&t->sleep_elem);
         thread_unblock(t);
       }
     }
-  // }
+  }
 
 }

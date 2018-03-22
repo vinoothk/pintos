@@ -165,6 +165,9 @@ void list_reverse (struct list *);
 typedef bool list_less_func (const struct list_elem *a,
                              const struct list_elem *b,
                              void *aux);
+bool timeticks_sort( struct list_elem *a,
+                              struct list_elem *b,
+                             void * t_);
 
 /* Operations on lists with ordered elements. */
 void list_sort (struct list *,
@@ -173,6 +176,7 @@ void list_insert_ordered (struct list *, struct list_elem *,
                           list_less_func *, void *aux);
 void list_unique (struct list *, struct list *duplicates,
                   list_less_func *, void *aux);
+void list_sort_priority(void *less_);
 
 /* Max and min. */
 struct list_elem *list_max (struct list *, list_less_func *, void *aux);

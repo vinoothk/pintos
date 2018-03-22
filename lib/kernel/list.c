@@ -443,6 +443,7 @@ list_sort (struct list *list, list_less_func *less, void *aux)
    sorted according to LESS given auxiliary data AUX.
    Runs in O(n) average case in the number of elements in LIST. */
 void
+
 list_insert_ordered (struct list *list, struct list_elem *elem,
                      list_less_func *less, void *aux)
 {
@@ -458,6 +459,21 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
   return list_insert (e, elem);
 }
 
+
+bool timeticks_sort( struct list_elem *elem,
+                              struct list_elem *e,
+                             void *aux)
+{
+  struct thread *a1 = list_entry(e,struct thread, sleep_elem);
+  struct thread *b1 = list_entry(elem,struct thread,sleep_elem);
+  // struct thread *b1 = 
+
+  if (a1->sleep_ticks < b1->sleep_ticks)
+    return true;
+  else
+    return false;
+
+}
 /* Iterates through LIST and removes all but the first in each
    set of adjacent elements that are equal according to LESS
    given auxiliary data AUX.  If DUPLICATES is non-null, then the
