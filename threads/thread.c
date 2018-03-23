@@ -649,12 +649,16 @@ void thread_wakeup(int64_t ticks)
     {
       struct thread *t = list_entry(e,struct thread, sleep_elem);
       // wakeup_ticks = t;
-      if (t->sleep_ticks <= ticks)
+      if (t->sleep_ticks > ticks)
+      {
+        
+        break;
+      }
+      else
       {
         t->sleep_ticks = -1;
         list_remove(&t->sleep_elem);
         thread_unblock(t);
-        // break;
       }
       // else
         // break;

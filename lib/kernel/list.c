@@ -471,7 +471,7 @@ bool timeticks_sort(const struct list_elem *elem,
   struct thread *b1 = list_entry(elem,struct thread,sleep_elem);
   // struct thread *b1 = 
 
-  if (a1->sleep_ticks < b1->sleep_ticks)
+  if (a1->sleep_ticks > b1->sleep_ticks)
   {
     // printf("timeticks_sort =  % "PRId64" %  "PRId64" \n",a1->sleep_ticks,b1->sleep_ticks);
     return true;
@@ -491,7 +491,6 @@ bool priority_sort(const struct list_elem *elem,
 
   if (a1->priority < b1->priority)
   {
-    // printf("timeticks_sort =  % "PRId64" %  "PRId64" \n",a1->sleep_ticks,b1->sleep_ticks);
     // printf("a priority = %d b priority = %d \n",a1->priority,b1->priority );
     return true;
   }
