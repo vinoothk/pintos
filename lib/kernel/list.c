@@ -1,6 +1,7 @@
 #include "list.h"
 #include "../debug.h"
 #include "../../threads/thread.h"
+#include <stdio.h>
 
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
@@ -448,6 +449,7 @@ void
 list_insert_ordered (struct list *list, struct list_elem *elem,
                      list_less_func *less, void *aux)
 {
+  
   struct list_elem *e;
 
   ASSERT (list != NULL);
@@ -461,8 +463,8 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
 }
 
 
-bool timeticks_sort( struct list_elem *elem,
-                              struct list_elem *e,
+bool timeticks_sort(const struct list_elem *elem,
+                            const  struct list_elem *e,
                              void *aux UNUSED)
 {
   struct thread *a1 = list_entry(e,struct thread, sleep_elem);
@@ -470,11 +472,34 @@ bool timeticks_sort( struct list_elem *elem,
   // struct thread *b1 = 
 
   if (a1->sleep_ticks < b1->sleep_ticks)
+  {
+    // printf("timeticks_sort =  % "PRId64" %  "PRId64" \n",a1->sleep_ticks,b1->sleep_ticks);
     return true;
+  }
   else
     return false;
 
 }
+
+bool priority_sort(const struct list_elem *elem,
+                            const  struct list_elem *e,
+                             void *aux UNUSED)
+{
+  struct thread *a1 = list_entry(e,struct thread, elem);
+  struct thread *b1 = list_entry(elem,struct thread,elem);
+  // struct thread *b1 = 
+
+  if (a1->priority < b1->priority)
+  {
+    // printf("timeticks_sort =  % "PRId64" %  "PRId64" \n",a1->sleep_ticks,b1->sleep_ticks);
+    // printf("a priority = %d b priority = %d \n",a1->priority,b1->priority );
+    return true;
+  }
+  else
+    return false;
+
+}
+
 /* Iterates through LIST and removes all but the first in each
    set of adjacent elements that are equal according to LESS
    given auxiliary data AUX.  If DUPLICATES is non-null, then the

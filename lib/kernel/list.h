@@ -165,9 +165,13 @@ void list_reverse (struct list *);
 typedef bool list_less_func (const struct list_elem *a,
                              const struct list_elem *b,
                              void *aux);
-bool timeticks_sort( struct list_elem *a,
-                              struct list_elem *b,
+bool timeticks_sort(const struct list_elem *a,
+                              const struct list_elem *b,
                              void * t_);
+bool priority_sort(const struct list_elem *elem,
+                            const  struct list_elem *e,
+                             void *aux);
+
 
 /* Operations on lists with ordered elements. */
 void list_sort (struct list *,

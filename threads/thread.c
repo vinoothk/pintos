@@ -202,6 +202,11 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  // printf("priority =  %d current priority =  %d name1 = %s name2 = %s\n",priority,thread_current() -> priority,name,thread_current()->name);
+  if (priority > thread_current()->priority) {
+   // current thread releases off its running
+    thread_yield();
+  }
 
   return tid;
 }
@@ -234,13 +239,30 @@ void
 thread_unblock (struct thread *t) 
 {
   enum intr_level old_level;
+  struct thread *cur = thread_current ();
 
   ASSERT (is_thread (t));
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list, &t->elem, priority_sort, NULL );
+
+  // if (!list_empty (&ready_list)) 
+  // {
+  // if(cur->priority < list_entry (list_front (&ready_list), struct thread, elem)->priority)
+     // thread_yield ();
+  // }
+  // // {
+  // //   list_push_front(&ready_list,&t->elem);
+
+  // // }
+  // else
+  // {
+  //   list_push_front (&ready_list, &cur->elem);
+  // }
   t->status = THREAD_READY;
+
   intr_set_level (old_level);
 }
 
@@ -310,8 +332,13 @@ thread_yield ()
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  // if (cur != idle_thread) 
+  //   list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread) {
+    // t will turn into ready-to-run state : inserting into ready_list
+   // printf("%thread yield priority = %d",cur->priority);
+   list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -602,7 +629,7 @@ void thread_sleep(int64_t ticks)
   old_level = intr_disable ();
   // if (cur != idle_thread) 
   // list_push_back (&sleep_list, &cur->sleep_elem);
-  list_insert_ordered (&sleep_list, &cur->sleep_elem, timeticks_sort , NULL );
+  list_insert_ordered (&sleep_list, &cur->sleep_elem,(list_less_func *)&timeticks_sort , NULL );
   thread_block();
   // cur->status = THREAD_BLOCKED;
   //thread_unblock();
@@ -627,7 +654,10 @@ void thread_wakeup(int64_t ticks)
         t->sleep_ticks = -1;
         list_remove(&t->sleep_elem);
         thread_unblock(t);
+        // break;
       }
+      // else
+        // break;
     }
   }
 
