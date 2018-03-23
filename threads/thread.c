@@ -51,7 +51,7 @@ static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
-static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
+// static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -137,8 +137,8 @@ thread_tick (void)
 
 
   /* Enforce preemption. */
-  if (++thread_ticks >= TIME_SLICE)//
-    intr_yield_on_return ();
+  // if (++thread_ticks >= TIME_SLICE)//
+    // intr_yield_on_return ();
 }
 
 /* Prints thread statistics. */
@@ -239,7 +239,7 @@ void
 thread_unblock (struct thread *t) 
 {
   enum intr_level old_level;
-  struct thread *cur = thread_current ();
+  // struct thread *cur = thread_current ();
 
   ASSERT (is_thread (t));
 
@@ -338,6 +338,7 @@ thread_yield ()
     // t will turn into ready-to-run state : inserting into ready_list
    // printf("%thread yield priority = %d",cur->priority);
    list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
+
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -365,7 +366,17 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  
+  //sort ready list after altering the priority, yield if running thread lower's its priority
+  // struct thread *t = thread_current();
+
+  if ( thread_current()->priority > new_priority)
+    {
+      thread_current ()->priority = new_priority;
+
+      thread_yield();
+    }
+  
 }
 
 /* Returns the current thread's priority. */
@@ -553,7 +564,7 @@ thread_schedule_tail (struct thread *prev)
   cur->status = THREAD_RUNNING;
 
   /* Start new time slice. */
-  thread_ticks = 0;
+  // thread_ticks = 0;
 
 #ifdef USERPROG
   /* Activate the new address space. */
