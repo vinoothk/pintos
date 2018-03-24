@@ -239,7 +239,7 @@ void
 thread_unblock (struct thread *t) 
 {
   enum intr_level old_level;
-  // struct thread *cur = thread_current ();
+  struct thread *cur = thread_current ();
 
   ASSERT (is_thread (t));
 
@@ -262,7 +262,7 @@ thread_unblock (struct thread *t)
   //   list_push_front (&ready_list, &cur->elem);
   // }
   t->status = THREAD_READY;
-
+  
   intr_set_level (old_level);
 }
 

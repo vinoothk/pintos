@@ -100,7 +100,7 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-    struct list_elem sleep_elem; /*vinooth- List tranverser for sleep_list*/
+    struct list_elem sleep_elem; /*vinooth- List traverser for sleep_list*/
     int64_t sleep_ticks;
 
   };
