@@ -239,7 +239,7 @@ void
 thread_unblock (struct thread *t) 
 {
   enum intr_level old_level;
-  struct thread *cur = thread_current ();
+  // struct thread *cur = thread_current ();
 
   ASSERT (is_thread (t));
 
@@ -247,6 +247,11 @@ thread_unblock (struct thread *t)
   ASSERT (t->status == THREAD_BLOCKED);
   // list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, priority_sort, NULL );
+  // if (t->priority > thread_current()->priority) {
+  //  // current thread releases off its running
+  //   thread_yield();
+  // }
+
 
   // if (!list_empty (&ready_list)) 
   // {
@@ -262,7 +267,9 @@ thread_unblock (struct thread *t)
   //   list_push_front (&ready_list, &cur->elem);
   // }
   t->status = THREAD_READY;
-  
+
+
+
   intr_set_level (old_level);
 }
 
@@ -534,7 +541,10 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
+  {
+    list_sort(&ready_list, priority_sort, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page
