@@ -459,6 +459,7 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
   for (e = list_begin (list); e != list_end (list); e = list_next (e))
     if (less (elem, e, aux))
       break;
+
   return list_insert (e, elem);
 }
 
@@ -498,6 +499,25 @@ bool priority_sort(const struct list_elem *elem,
     return false;
 
 }
+
+bool priority_sort_thrd_yield(const struct list_elem *elem,
+                            const  struct list_elem *e,
+                             void *aux UNUSED)
+{
+  struct thread *a1 = list_entry(e,struct thread, elem);
+  struct thread *b1 = list_entry(elem,struct thread,elem);
+  // struct thread *b1 = 
+
+  if (a1->priority <= b1->priority)
+  {
+    // printf("a priority = %d b priority = %d \n",a1->priority,b1->priority );
+    return true;
+  }
+  else
+    return false;
+
+}
+
 
 /* Iterates through LIST and removes all but the first in each
    set of adjacent elements that are equal according to LESS

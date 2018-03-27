@@ -120,6 +120,7 @@ sema_up (struct semaphore *sema)
    // list_sort(&sema->waiters, priority_sort, NULL); 
    t = list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem);
+   // printf("thread with priority_sort %d \n ",thread_current()->priority);
    thread_unblock(t);
    }
     
@@ -222,12 +223,23 @@ lock_try_acquire (struct lock *lock)
   bool success;
 
   ASSERT (lock != NULL);
-  ASSERT (!lock_held_by_current_thread (lock));
-
+  // ASSERT (!lock_held_by_current_thread (lock));
+  if (lock_held_by_current_thread(lock))
+  {
+    // printf("thread with priority_sort %d \n ",thread_current()->priority); 
+    return true;
+  }
+  else
+  {
   success = sema_try_down (&lock->semaphore);
   if (success)
-    lock->holder = thread_current ();
-  return success;
+    {
+      lock->holder = thread_current ();
+      return true;
+    }
+    else
+      return false;
+  }
 }
 
 /* Releases LOCK, which must be owned by the current thread.
@@ -256,11 +268,14 @@ lock_held_by_current_thread (const struct lock *lock)
   return lock->holder == thread_current ();
 }
 
+
+
 /* One semaphore in a list. */
 struct semaphore_elem 
   {
     struct list_elem elem;              /* List element. */
     struct semaphore semaphore;         /* This semaphore. */
+    struct thread *waiting_for;
   };
 
 /* Initializes condition variable COND.  A condition variable
@@ -274,6 +289,15 @@ cond_init (struct condition *cond)
   list_init (&cond->waiters);
 }
 
+bool 
+order_by_waiting_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+  struct semaphore_elem *sema = list_entry (a, struct semaphore_elem , elem);
+  struct thread *th_waiting_a = sema->waiting_for;
+  struct semaphore_elem *semb = list_entry (b, struct semaphore_elem , elem);
+  struct thread *th_waiting_b = semb->waiting_for;
+  return th_waiting_a->priority > th_waiting_b->priority;
+}
 /* Atomically releases LOCK and waits for COND to be signaled by
    some other piece of code.  After COND is signaled, LOCK is
    reacquired before returning.  LOCK must be held before calling
@@ -302,12 +326,22 @@ cond_wait (struct condition *cond, struct lock *lock)
   ASSERT (cond != NULL);
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
+  if (lock_try_acquire(lock))
+  {
+    // printf("thread with priority_sort %d \n ",thread_current()->priority);
+  }
+  else{
+    cond_wait(cond,lock);
+  }
   ASSERT (lock_held_by_current_thread (lock));
-  
+  waiter.waiting_for = thread_current ();
   sema_init (&waiter.semaphore, 0);
-  list_push_back (&cond->waiters, &waiter.elem);
+  // list_push_back (&cond->waiters, &waiter.elem);
+  // waiter.
+  list_insert_ordered(&cond->waiters, &waiter.elem, &order_by_waiting_priority, NULL);
   lock_release (lock);
   sema_down (&waiter.semaphore);
+  
   lock_acquire (lock);
 }
 
@@ -327,8 +361,12 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
+  {
+    list_sort(&cond->waiters, priority_sort, NULL); 
     sema_up (&list_entry (list_pop_front (&cond->waiters),
                           struct semaphore_elem, elem)->semaphore);
+  }
+
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by

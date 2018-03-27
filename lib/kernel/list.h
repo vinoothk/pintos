@@ -171,7 +171,9 @@ bool timeticks_sort(const struct list_elem *a,
 bool priority_sort(const struct list_elem *elem,
                             const  struct list_elem *e,
                              void *aux);
-
+bool priority_sort_thrd_yield(const struct list_elem *elem,
+                            const  struct list_elem *e,
+                             void *aux);
 
 /* Operations on lists with ordered elements. */
 void list_sort (struct list *,

@@ -247,7 +247,7 @@ thread_unblock (struct thread *t)
   ASSERT (t->status == THREAD_BLOCKED);
   // list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, priority_sort, NULL );
-  // if (t->priority > thread_current()->priority) {
+  // if (t->priority == thread_current()->priority) {
   //  // current thread releases off its running
   //   thread_yield();
   // }
@@ -344,8 +344,9 @@ thread_yield ()
   if (cur != idle_thread) {
     // t will turn into ready-to-run state : inserting into ready_list
    // printf("%thread yield priority = %d",cur->priority);
-   list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
-
+   // list_remove(&cur->elem); 
+   list_insert_ordered (&ready_list, &cur->elem, priority_sort_thrd_yield, NULL);
+    // list_push_back (&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -542,7 +543,7 @@ next_thread_to_run (void)
     return idle_thread;
   else
   {
-    list_sort(&ready_list, priority_sort, NULL);
+    // list_sort(&ready_list, priority_sort, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
   }
 }
