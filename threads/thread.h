@@ -109,6 +109,7 @@ struct thread
     int64_t sleep_ticks;
     //mlfqs
     int nice;
+    int recent_cpu;
 
   };
 
@@ -149,6 +150,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-void thread_compute_load_avg (void);
+void update_load_avg (void);
+int thread_compute_recent_cpu(void);
 
 #endif /* threads/thread.h */

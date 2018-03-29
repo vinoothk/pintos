@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/fixed-point.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -187,8 +188,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  if (ticks % TIMER_FREQ == 0) 
-    thread_compute_load_avg ();//called every 100 ticks?
+  
   thread_wakeup(ticks);
 }
 

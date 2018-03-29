@@ -52,7 +52,7 @@ static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
-// static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
+static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -139,10 +139,21 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-
+  thread_ticks++;
   /* Enforce preemption. */
-  // if (++thread_ticks >= TIME_SLICE)
-    // intr_yield_on_return ();
+  if (thread_mlfqs)
+  {
+    if (thread_current() != idle_thread)
+    {
+      // thread_current() -> recent_cpu +=1;
+      thread_current ()->recent_cpu = FP_TO_INT_NEAR (INT_ADD (INT_TO_FP (thread_current ()->recent_cpu), 100));
+    }
+    if (thread_ticks % 100 == 0)
+    {
+      thread_current() -> recent_cpu = thread_get_recent_cpu();
+      update_load_avg ();//called every 100 ticks?
+    }
+  }
 
 }
 
@@ -208,11 +219,12 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
-  if (thread_mlfqs)
-    t->priority = thread_get_priority ();
+  // if (thread_mlfqs)
+  //   t->priority = thread_get_priority ();
   // printf("priority =  %d current priority =  %d name1 = %s name2 = %s\n",priority,thread_current() -> priority,name,thread_current()->name);
   if (priority > thread_current()->priority) {
    // current thread releases off its running
+    t -> recent_cpu = thread_current() -> recent_cpu;
     thread_yield();
   }
 
@@ -332,11 +344,7 @@ thread_yield ()
   // if (cur != idle_thread) 
   //   list_push_back (&ready_list, &cur->elem);
   if (cur != idle_thread) {
-    // t will turn into ready-to-run state : inserting into ready_list
-   // printf("%thread yield priority = %d",cur->priority);
-   // list_remove(&cur->elem); 
    list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
-    // list_push_back (&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -376,28 +384,36 @@ thread_set_priority (int new_priority)
     }
   
 }
-int
+// int
+//  thread_compute_recent_cpu (void) 
+//  {
+//   //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
+//   int recent_cpu = 0;
+//   int load = thread_get_load_avg ();
+//   return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV ((2 * load)/100,(2 * load)/100 + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
+//  }
+
+ int
  thread_get_recent_cpu (void) 
  {
   //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
-  int recent_cpu = 0;
-  int load = thread_get_load_avg ();
-  printf("recent cpu nice = %d \n",thread_get_nice() );
-  return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV ((2 * load)/100,(2 * load)/100 + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
+  static int recent_cpu = 0;
+  int load = 2 *  thread_get_load_avg ()/100;
+  return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV (load,load + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
  }
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  int Priority;
+  // int Priority;
   
-  if (thread_mlfqs)
-    {
-      //priority = PRI_MAX - (recent_cpu / 4) - (nice * 2).
-    Priority = PRI_MAX - FP_TO_INT_NEAR (thread_get_recent_cpu () / 4) - thread_get_nice () * 2;
-    printf(" thread_get_priority Priority = %d \n",Priority );
-    return Priority;
-    }
+  // if (thread_mlfqs)
+  //   {
+  //     //priority = PRI_MAX - (recent_cpu / 4) - (nice * 2).
+  //   Priority = PRI_MAX - FP_TO_INT_NEAR (thread_compute_recent_cpu () / 4) - thread_get_nice () * 2;
+  //   // printf(" thread_get_priority Priority = %d \n",Priority );
+  //   return Priority;
+  //   }
 
   return thread_current ()->priority;
 }
@@ -422,8 +438,8 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-
-  return load_avg;
+  return FP_TO_INT_NEAR(load_avg);
+  // return load_avg;
 }
 
 
@@ -546,7 +562,6 @@ next_thread_to_run (void)
     return idle_thread;
   else
   {
-    // list_sort(&ready_list, priority_sort, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
   }
 }
@@ -652,13 +667,8 @@ void thread_sleep(int64_t ticks)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  // if (cur != idle_thread) 
-  // list_push_back (&sleep_list, &cur->sleep_elem);
   list_insert_ordered (&sleep_list, &cur->sleep_elem,(list_less_func *)&timeticks_sort , NULL );
   thread_block();
-  // cur->status = THREAD_BLOCKED;
-  //thread_unblock();
-  // schedule ();
 
 
   intr_set_level (old_level);
@@ -673,7 +683,6 @@ void thread_wakeup(int64_t ticks)
     for (e = list_begin (&sleep_list); e != list_end (&sleep_list); e = list_next (e))
     {
       struct thread *t = list_entry(e,struct thread, sleep_elem);
-      // wakeup_ticks = t;
       if (t->sleep_ticks > ticks)
       {
         
@@ -685,14 +694,12 @@ void thread_wakeup(int64_t ticks)
         list_remove(&t->sleep_elem);
         thread_unblock(t);
       }
-      // else
-        // break;
     }
   }
 
 }
 void
-thread_compute_load_avg (void)
+update_load_avg (void)
 {
   //load_avg = (59/60)*load_avg + (1/60)*ready_threads.
   int ready_threads_count;
@@ -701,7 +708,9 @@ thread_compute_load_avg (void)
     ready_threads_count = list_size (&ready_list) + 1;
 
   else
-    ready_threads_count = 0;
-  load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
+    // ready_threads_count = 0;
+    ready_threads_count = list_size (&ready_list);
+  // load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
+  // load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
+     load_avg = 100 * (FP_MUL (INT_TO_FP (59) / 60, load_avg / 100) + INT_TO_FP (1) / 60 * ready_threads_count);
 }
-
