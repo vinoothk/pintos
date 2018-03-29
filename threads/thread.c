@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -57,6 +58,7 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
+static int load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -99,6 +101,8 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  //mlfqs - vinooth
+  load_avg = 0;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -137,8 +141,9 @@ thread_tick (void)
 
 
   /* Enforce preemption. */
-  // if (++thread_ticks >= TIME_SLICE)//
+  // if (++thread_ticks >= TIME_SLICE)
     // intr_yield_on_return ();
+
 }
 
 /* Prints thread statistics. */
@@ -202,6 +207,9 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+
+  if (thread_mlfqs)
+    t->priority = thread_get_priority ();
   // printf("priority =  %d current priority =  %d name1 = %s name2 = %s\n",priority,thread_current() -> priority,name,thread_current()->name);
   if (priority > thread_current()->priority) {
    // current thread releases off its running
@@ -247,25 +255,7 @@ thread_unblock (struct thread *t)
   ASSERT (t->status == THREAD_BLOCKED);
   // list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, priority_sort, NULL );
-  // if (t->priority == thread_current()->priority) {
-  //  // current thread releases off its running
-  //   thread_yield();
-  // }
-
-
-  // if (!list_empty (&ready_list)) 
-  // {
-  // if(cur->priority < list_entry (list_front (&ready_list), struct thread, elem)->priority)
-     // thread_yield ();
-  // }
-  // // {
-  // //   list_push_front(&ready_list,&t->elem);
-
-  // // }
-  // else
-  // {
-  //   list_push_front (&ready_list, &cur->elem);
-  // }
+  
   t->status = THREAD_READY;
 
 
@@ -345,7 +335,7 @@ thread_yield ()
     // t will turn into ready-to-run state : inserting into ready_list
    // printf("%thread yield priority = %d",cur->priority);
    // list_remove(&cur->elem); 
-   list_insert_ordered (&ready_list, &cur->elem, priority_sort_thrd_yield, NULL);
+   list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
     // list_push_back (&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
@@ -386,11 +376,29 @@ thread_set_priority (int new_priority)
     }
   
 }
-
+int
+ thread_get_recent_cpu (void) 
+ {
+  //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
+  int recent_cpu = 0;
+  int load = thread_get_load_avg ();
+  printf("recent cpu nice = %d \n",thread_get_nice() );
+  return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV ((2 * load)/100,(2 * load)/100 + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
+ }
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
+  int Priority;
+  
+  if (thread_mlfqs)
+    {
+      //priority = PRI_MAX - (recent_cpu / 4) - (nice * 2).
+    Priority = PRI_MAX - FP_TO_INT_NEAR (thread_get_recent_cpu () / 4) - thread_get_nice () * 2;
+    printf(" thread_get_priority Priority = %d \n",Priority );
+    return Priority;
+    }
+
   return thread_current ()->priority;
 }
 
@@ -406,24 +414,19 @@ int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return 0;
+
+  return thread_current () -> nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+
+  return load_avg;
 }
 
-/* Returns 100 times the current thread's recent_cpu value. */
-int
-thread_get_recent_cpu (void) 
-{
-  /* Not yet implemented. */
-  return 0;
-}
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
@@ -688,3 +691,17 @@ void thread_wakeup(int64_t ticks)
   }
 
 }
+void
+thread_compute_load_avg (void)
+{
+  //load_avg = (59/60)*load_avg + (1/60)*ready_threads.
+  int ready_threads_count;
+  
+  if (thread_current () != idle_thread)
+    ready_threads_count = list_size (&ready_list) + 1;
+
+  else
+    ready_threads_count = 0;
+  load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
+}
+

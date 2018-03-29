@@ -13,6 +13,11 @@ enum thread_status
     THREAD_BLOCKED,     /* Waiting for an event to trigger. */
     THREAD_DYING        /* About to be destroyed. */
   };
+//mlfqs
+  /* My Implementation */
+#define NICE_MAX 20
+#define NICE_DEFAULT 0
+#define NICE_MIN -20
 
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
@@ -102,6 +107,8 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
     struct list_elem sleep_elem; /*vinooth- List traverser for sleep_list*/
     int64_t sleep_ticks;
+    //mlfqs
+    int nice;
 
   };
 
@@ -142,5 +149,6 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+void thread_compute_load_avg (void);
 
 #endif /* threads/thread.h */

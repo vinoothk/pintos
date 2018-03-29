@@ -187,6 +187,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  if (ticks % TIMER_FREQ == 0) 
+    thread_compute_load_avg ();//called every 100 ticks?
   thread_wakeup(ticks);
 }
 

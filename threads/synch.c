@@ -276,6 +276,7 @@ struct semaphore_elem
     struct list_elem elem;              /* List element. */
     struct semaphore semaphore;         /* This semaphore. */
     struct thread *waiting_for;
+    int priority_sema;
   };
 
 /* Initializes condition variable COND.  A condition variable
@@ -338,11 +339,19 @@ cond_wait (struct condition *cond, struct lock *lock)
   sema_init (&waiter.semaphore, 0);
   // list_push_back (&cond->waiters, &waiter.elem);
   // waiter.
+
   list_insert_ordered(&cond->waiters, &waiter.elem, &order_by_waiting_priority, NULL);
   lock_release (lock);
-  sema_down (&waiter.semaphore);
+  if ( sema_try_down (&waiter.semaphore) == true)
+  {
   
   lock_acquire (lock);
+  }
+  else
+  {
+    list_insert_ordered(&cond->waiters, &waiter.elem, &order_by_waiting_priority, NULL);
+  }
+
 }
 
 /* If any threads are waiting on COND (protected by LOCK), then
