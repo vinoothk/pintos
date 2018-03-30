@@ -59,6 +59,7 @@ static unsigned thread_ticks;   /* # of timer ticks since lastyield. */
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
 static int load_avg;
+static int recent_cpu;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -143,14 +144,10 @@ thread_tick (void)
   /* Enforce preemption. */
   if (thread_mlfqs)
   {
-    if (thread_current() != idle_thread)
-    {
-      // thread_current() -> recent_cpu +=1;
-      thread_current ()->recent_cpu = FP_TO_INT_NEAR (INT_ADD (INT_TO_FP (thread_current ()->recent_cpu), 100));
-    }
+    
     if (thread_ticks % 100 == 0)
     {
-      thread_current() -> recent_cpu = thread_get_recent_cpu();
+      recent_cpu = thread_get_recent_cpu();
       update_load_avg ();//called every 100 ticks?
     }
   }
@@ -219,12 +216,7 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
-  // if (thread_mlfqs)
-  //   t->priority = thread_get_priority ();
-  // printf("priority =  %d current priority =  %d name1 = %s name2 = %s\n",priority,thread_current() -> priority,name,thread_current()->name);
   if (priority > thread_current()->priority) {
-   // current thread releases off its running
-    t -> recent_cpu = thread_current() -> recent_cpu;
     thread_yield();
   }
 
@@ -341,8 +333,6 @@ thread_yield ()
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  // if (cur != idle_thread) 
-  //   list_push_back (&ready_list, &cur->elem);
   if (cur != idle_thread) {
    list_insert_ordered (&ready_list, &cur->elem, priority_sort, NULL);
   }
@@ -372,10 +362,6 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  
-  //sort ready list after altering the priority, yield if running thread lower's its priority
-  // struct thread *t = thread_current();
-
   if ( thread_current()->priority > new_priority)
     {
       thread_current ()->priority = new_priority;
@@ -384,37 +370,18 @@ thread_set_priority (int new_priority)
     }
   
 }
-// int
-//  thread_compute_recent_cpu (void) 
-//  {
-//   //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
-//   int recent_cpu = 0;
-//   int load = thread_get_load_avg ();
-//   return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV ((2 * load)/100,(2 * load)/100 + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
-//  }
 
  int
  thread_get_recent_cpu (void) 
  {
-  //recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
-  static int recent_cpu = 0;
-  int load = 2 *  thread_get_load_avg ()/100;
-  return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV (load,load + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
+  int load = thread_get_load_avg ();
+  return recent_cpu = 100 * FP_TO_INT_NEAR ((FP_DIV (2 * load/100,(2 * load)/100 + 1) + INT_TO_FP (recent_cpu) / 100) * thread_get_nice ());
  }
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  // int Priority;
   
-  // if (thread_mlfqs)
-  //   {
-  //     //priority = PRI_MAX - (recent_cpu / 4) - (nice * 2).
-  //   Priority = PRI_MAX - FP_TO_INT_NEAR (thread_compute_recent_cpu () / 4) - thread_get_nice () * 2;
-  //   // printf(" thread_get_priority Priority = %d \n",Priority );
-  //   return Priority;
-  //   }
-
   return thread_current ()->priority;
 }
 
@@ -438,8 +405,7 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  return FP_TO_INT_NEAR(load_avg);
-  // return load_avg;
+  return load_avg;
 }
 
 
@@ -531,7 +497,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-
+  
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -708,9 +674,6 @@ update_load_avg (void)
     ready_threads_count = list_size (&ready_list) + 1;
 
   else
-    // ready_threads_count = 0;
-    ready_threads_count = list_size (&ready_list);
-  // load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
-  // load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
-     load_avg = 100 * (FP_MUL (INT_TO_FP (59) / 60, load_avg / 100) + INT_TO_FP (1) / 60 * ready_threads_count);
+    ready_threads_count = 0;
+  load_avg = FP_TO_INT_NEAR (100 * (FP_MUL (INT_TO_FP (59) / 60, INT_TO_FP (load_avg) / 100) + INT_TO_FP (1) / 60 * ready_threads_count));
 }

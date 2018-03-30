@@ -94,22 +94,8 @@ timer_sleep (int64_t ticks)
 
 
   ASSERT (intr_get_level () == INTR_ON);
-  // printf("inside timer_sleep vinooth\n" );
-  // printf ("timer_sleep start vinooth=%08"PRId64"\n",start);
-  // printf ("timer_sleep ticks vinooth=%08"PRId64"\t  %s  \n", ticks,thread_name());
-  // while (timer_elapsed (start) < ticks) 
-  // {
-  //   thread_yield ();
-    
-  // }
-  // printf ("timer_sleep=%08"PRId64"\n",start);
-  // printf ("timer_sleep=%08"PRId64"\n", ticks);
   thread_sleep(start + ticks);//vinooth -- function to put threads in a sleep list and 
                         //wake up after x ticks
-
-
-  
-  
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

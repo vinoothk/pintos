@@ -13,8 +13,6 @@ enum thread_status
     THREAD_BLOCKED,     /* Waiting for an event to trigger. */
     THREAD_DYING        /* About to be destroyed. */
   };
-//mlfqs
-  /* My Implementation */
 #define NICE_MAX 20
 #define NICE_DEFAULT 0
 #define NICE_MIN -20
@@ -151,6 +149,5 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 void update_load_avg (void);
-int thread_compute_recent_cpu(void);
 
 #endif /* threads/thread.h */
